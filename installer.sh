@@ -33,8 +33,8 @@ FILE_INTERFACES="/etc/network/interfaces"
 FILE_NM_CONF="/etc/NetworkManager/NetworkManager.conf"
 FILE_NM_CONNECTION="/etc/NetworkManager/system-connections/default"
 
-URL_RAW_BASE="https://raw.githubusercontent.com/home-assistant/supervised-installer/master/files"
-URL_VERSION="https://version.home-assistant.io/stable.json"
+URL_RAW_BASE="./files"
+URL_VERSION="./stable.json"
 URL_BIN_APPARMOR="${URL_RAW_BASE}/hassio-apparmor"
 URL_BIN_HASSIO="${URL_RAW_BASE}/hassio-supervisor"
 URL_DOCKER_DAEMON="${URL_RAW_BASE}/docker_daemon.json"
@@ -44,7 +44,7 @@ URL_NM_CONF="${URL_RAW_BASE}/NetworkManager.conf"
 URL_NM_CONNECTION="${URL_RAW_BASE}/system-connection-default"
 URL_SERVICE_APPARMOR="${URL_RAW_BASE}/hassio-apparmor.service"
 URL_SERVICE_HASSIO="${URL_RAW_BASE}/hassio-supervisor.service"
-URL_APPARMOR_PROFILE="https://version.home-assistant.io/apparmor.txt"
+URL_APPARMOR_PROFILE="./apparmor.txt"
 
 # Check env
 command -v systemctl > /dev/null 2>&1 || MISSING_PACKAGES+=("systemd")
@@ -71,7 +71,7 @@ fi
 if [ ! -f "$FILE_DOCKER_CONF" ]; then
   # Write default configuration
   info "Creating default docker daemon configuration $FILE_DOCKER_CONF"
-  curl -sL ${URL_DOCKER_DAEMON} > "${FILE_DOCKER_CONF}"
+  cp ${URL_DOCKER_DAEMON}   "${FILE_DOCKER_CONF}"
 
   # Restart Docker service
   info "Restarting docker service"
@@ -96,9 +96,9 @@ fi
 
 # Create config for NetworkManager
 info "Creating NetworkManager configuration"
-curl -sL "${URL_NM_CONF}" > "${FILE_NM_CONF}"
+cp "${URL_NM_CONF}"   "${FILE_NM_CONF}"
 if [ ! -f "$FILE_NM_CONNECTION" ]; then
-    curl -sL "${URL_NM_CONNECTION}" > "${FILE_NM_CONNECTION}"
+    cp "${URL_NM_CONNECTION}"   "${FILE_NM_CONNECTION}"
 fi
 
 warn "Changes are needed to the /etc/network/interfaces file"
@@ -109,7 +109,7 @@ read answer < /dev/tty
 
 if [[ "$answer" =~ "y" ]] || [[ "$answer" =~ "Y" ]]; then
     info "Replacing /etc/network/interfaces"
-    curl -sL "${URL_INTERFACES}" > "${FILE_INTERFACES}";
+    cp "${URL_INTERFACES}"   "${FILE_INTERFACES}";
 fi
 
 info "Restarting NetworkManager"
@@ -193,7 +193,7 @@ if [ ! -d "$DATA_SHARE" ]; then
 fi
 
 # Read infos from web
-HASSIO_VERSION=$(curl -s $URL_VERSION | jq -e -r '.supervisor')
+HASSIO_VERSION=$(cat -s $URL_VERSION | jq -e -r '.supervisor')
 
 ##
 # Write configuration
@@ -214,8 +214,8 @@ docker tag "$HASSIO_DOCKER:$HASSIO_VERSION" "$HASSIO_DOCKER:latest" > /dev/null
 ##
 # Install Hass.io Supervisor
 info "Install supervisor startup scripts"
-curl -sL ${URL_BIN_HASSIO} > "${PREFIX}/sbin/hassio-supervisor"
-curl -sL ${URL_SERVICE_HASSIO} > "${SYSCONFDIR}/systemd/system/hassio-supervisor.service"
+cp ${URL_BIN_HASSIO}   "${PREFIX}/sbin/hassio-supervisor"
+cp ${URL_SERVICE_HASSIO}   "${SYSCONFDIR}/systemd/system/hassio-supervisor.service"
 
 sed -i "s,%%HASSIO_CONFIG%%,${CONFIG},g" "${PREFIX}"/sbin/hassio-supervisor
 sed -i -e "s,%%BINARY_DOCKER%%,${BINARY_DOCKER},g" \
@@ -230,9 +230,9 @@ systemctl enable hassio-supervisor.service > /dev/null 2>&1;
 # Install Hass.io AppArmor
 info "Install AppArmor scripts"
 mkdir -p "${DATA_SHARE}/apparmor"
-curl -sL ${URL_BIN_APPARMOR} > "${PREFIX}/sbin/hassio-apparmor"
-curl -sL ${URL_SERVICE_APPARMOR} > "${SYSCONFDIR}/systemd/system/hassio-apparmor.service"
-curl -sL ${URL_APPARMOR_PROFILE} > "${DATA_SHARE}/apparmor/hassio-supervisor"
+cp ${URL_BIN_APPARMOR}   "${PREFIX}/sbin/hassio-apparmor"
+cp ${URL_SERVICE_APPARMOR}   "${SYSCONFDIR}/systemd/system/hassio-apparmor.service"
+cp ${URL_APPARMOR_PROFILE}   "${DATA_SHARE}/apparmor/hassio-supervisor"
 
 sed -i "s,%%HASSIO_CONFIG%%,${CONFIG},g" "${PREFIX}/sbin/hassio-apparmor"
 sed -i -e "s,%%SERVICE_DOCKER%%,${SERVICE_DOCKER},g" \
@@ -252,7 +252,7 @@ systemctl start hassio-supervisor.service
 ##
 # Setup CLI
 info "Installing the 'ha' cli"
-curl -sL ${URL_HA} > "${PREFIX}/bin/ha"
+cp ${URL_HA}   "${PREFIX}/bin/ha"
 chmod a+x "${PREFIX}/bin/ha"
 
 info
